@@ -1,0 +1,57 @@
+# @title Decision Tree
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import accuracy_score, classification_report
+
+# 1. Load Data
+df = pd.read_csv('/content/education_career_success.csv')
+
+# 2. Setup Features and Target
+target = 'Current_Job_Level'
+features = ['Age', 'Gender', 'High_School_GPA', 'SAT_Score', 'University_GPA',
+            'Field_of_Study', 'Internships_Completed', 'Projects_Completed',
+            'Certifications', 'Soft_Skills_Score', 'Networking_Score']
+
+X = df[features].copy()
+y = df[target]
+
+# 3. Preprocessing
+le_gender = LabelEncoder()
+X['Gender'] = le_gender.fit_transform(X['Gender'])
+le_field = LabelEncoder()
+X['Field_of_Study'] = le_field.fit_transform(X['Field_of_Study'])
+
+# 4. Split Data
+# Change test_size value to try different split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 5. Train Decision Tree
+dt_model = DecisionTreeClassifier(random_state=42, max_depth=5)
+dt_model.fit(X_train, y_train)
+
+# 6. Evaluate
+dt_pred = dt_model.predict(X_test)
+print("--- Decision Tree Results ---")
+print(f"Accuracy: {accuracy_score(y_test, dt_pred):.2%}")
+print(classification_report(y_test, dt_pred))
+
+# 7. Visualize the Tree
+plt.figure(figsize=(20, 10))
+plot_tree(dt_model, feature_names=features, class_names=dt_model.classes_, filled=True, fontsize=10)
+plt.title("Decision Tree Visualization")
+plt.show()
+
+# Feature importance for Decision Tree
+importances_dt = dt_model.feature_importances_
+indices_dt = np.argsort(importances_dt)[::-1]
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x=importances_dt[indices_dt], y=np.array(features)[indices_dt], palette='viridis')
+plt.title("Decision Tree Feature Importance")
+plt.xlabel("Importance Score")
+plt.ylabel("Features")
+plt.tight_layout()
+plt.show()
