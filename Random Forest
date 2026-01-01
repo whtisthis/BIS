@@ -1,0 +1,51 @@
+# @title Random Forest
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+
+# 1. Load Data
+df = pd.read_csv('/content/education_career_success.csv')
+
+# 2. Setup Features and Target
+target = 'Current_Job_Level'
+features = ['Age', 'Gender', 'High_School_GPA', 'SAT_Score', 'University_GPA',
+            'Field_of_Study', 'Internships_Completed', 'Projects_Completed',
+            'Certifications', 'Soft_Skills_Score', 'Networking_Score']
+
+X = df[features].copy()
+y = df[target]
+
+# 3. Preprocessing
+le_gender = LabelEncoder()
+X['Gender'] = le_gender.fit_transform(X['Gender'])
+le_field = LabelEncoder()
+X['Field_of_Study'] = le_field.fit_transform(X['Field_of_Study'])
+
+# 4. Split Data
+# Change test_size value to try different split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 5. Train Random Forest
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# 6. Evaluate
+rf_pred = rf_model.predict(X_test)
+print("--- Random Forest Results ---")
+print(f"Accuracy: {accuracy_score(y_test, rf_pred):.2%}")
+print(classification_report(y_test, rf_pred))
+
+# 7. Visualize Feature Importance
+importances = rf_model.feature_importances_
+indices = np.argsort(importances)[::-1]
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x=importances[indices], y=np.array(features)[indices], palette='viridis')
+plt.title("Random Forest Feature Importance")
+plt.xlabel("Importance Score")
+plt.show()
