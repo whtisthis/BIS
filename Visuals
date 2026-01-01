@@ -1,0 +1,79 @@
+# @title Visuals
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix
+
+# 1. Load Data
+df = pd.read_csv('/content/education_career_success.csv')
+
+# 2. Preprocess
+# Define features and target
+target = 'Current_Job_Level'
+feature_cols = ['Age', 'Gender', 'High_School_GPA', 'SAT_Score', 'University_GPA',
+                'Field_of_Study', 'Internships_Completed', 'Projects_Completed',
+                'Certifications', 'Soft_Skills_Score', 'Networking_Score']
+
+X = df[feature_cols].copy()
+y = df[target]
+
+# Encode categoricals
+le_gender = LabelEncoder()
+X['Gender'] = le_gender.fit_transform(X['Gender'])
+le_field = LabelEncoder()
+X['Field_of_Study'] = le_field.fit_transform(X['Field_of_Study'])
+
+# Split
+# Change test_size value to try different split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 3. Train Model (Random Forest)
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+y_pred = rf.predict(X_test)
+
+# 4. Visualization 1: Feature Importance
+importances = rf.feature_importances_
+indices = np.argsort(importances)[::-1]
+feature_names = X.columns
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x=importances[indices], y=feature_names[indices], palette='viridis')
+plt.title('Feature Importance (Random Forest)')
+plt.xlabel('Importance Score')
+plt.ylabel('Features')
+plt.tight_layout()
+plt.savefig('feature_importance_vis.png')
+plt.close()
+
+# 5. Visualization 2: Confusion Matrix
+cm = confusion_matrix(y_test, y_pred, labels=rf.classes_)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=rf.classes_, yticklabels=rf.classes_)
+plt.title('Confusion Matrix: Random Forest Model')
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.tight_layout()
+plt.savefig('confusion_matrix_vis.png')
+plt.close()
+
+# 6. Visualization 3: Correlation Heatmap
+# Select numerical columns for correlation
+numeric_cols = ['High_School_GPA', 'SAT_Score', 'University_GPA',
+                'Internships_Completed', 'Projects_Completed',
+                'Certifications', 'Soft_Skills_Score', 'Networking_Score']
+corr_matrix = df[numeric_cols].corr()
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', square=True)
+plt.title('Correlation Matrix of Key Numerical Features')
+plt.tight_layout()
+plt.savefig('correlation_heatmap_vis.png')
+plt.close()
+
+
+print("Visualizations generated: feature_importance_vis.png, confusion_matrix_vis.png, correlation_heatmap_vis.png")
