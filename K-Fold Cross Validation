@@ -1,0 +1,69 @@
+# @title K-fold Cross Validation
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report, accuracy_score
+
+# ---------------------------------------------------------
+# 1. Data Loading & Feature Engineering
+# ---------------------------------------------------------
+df = pd.read_csv('/content/education_career_success.csv')
+
+# Define Target Variable
+target_col = 'Current_Job_Level'
+
+# CRITICAL: Drop outcome variables to prevent Data Leakage.
+# We want to predict success based on PROFILE, not based on salary/results.
+drop_cols = ['Student_ID', 'Starting_Salary', 'Job_Offers',
+             'Years_to_Promotion', 'Career_Satisfaction', target_col]
+
+X = df.drop(columns=drop_cols)
+y = df[target_col]
+
+# ---------------------------------------------------------
+# 2. Preprocessing (Encoding)
+# ---------------------------------------------------------
+# One-Hot Encode categorical features (Gender, Field of Study, etc.)
+# drop_first=True prevents multicollinearity (dummy variable trap)
+X = pd.get_dummies(X, drop_first=True)
+
+# Label Encode the Target (Ordinal: Entry -> Mid -> Senior)
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+
+# ---------------------------------------------------------
+# 3. Model Training (Split & Fit)
+# ---------------------------------------------------------
+# Split data: 80% for training the model, 20% for final evaluation
+# Change test_size value to try different split
+X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
+
+# Implementation A: Decision Tree
+# constrained with max_depth=5 to prevent overfitting
+dt_model = DecisionTreeClassifier(random_state=42, max_depth=5)
+dt_model.fit(X_train, y_train)
+
+# Implementation B: Random Forest
+# uses 100 trees (n_estimators) to ensemble the results
+rf_model = RandomForestClassifier(random_state=42, n_estimators=100, max_depth=10)
+rf_model.fit(X_train, y_train)
+
+# ---------------------------------------------------------
+# 4. Evaluation & Validation
+# ---------------------------------------------------------
+# Predictions on unseen test set
+dt_acc = accuracy_score(y_test, dt_model.predict(X_test))
+rf_acc = accuracy_score(y_test, rf_model.predict(X_test))
+
+# Validation: 5-Fold Cross Validation to prove robustness
+dt_cv_scores = cross_val_score(dt_model, X, y_encoded, cv=5)
+rf_cv_scores = cross_val_score(rf_model, X, y_encoded, cv=5)
+
+print(f"--- K-Fold Cross Validation Results ---")
+#print(f"Decision Tree Test Accuracy: {dt_acc:.2%}")
+#print(f"Random Forest Test Accuracy: {rf_acc:.2%}")
+print(f"Decision Tree 5-Fold CV Mean Accuracy: {np.mean(dt_cv_scores):.2%}")
+print(f"Random Forest 5-Fold CV Mean Accuracy: {np.mean(rf_cv_scores):.2%}")
